@@ -4,7 +4,6 @@
 # concept: start with every number possible in every spot,
 # eliminate numbers as they are made impossible
 from numpy import *
-import tkinter as tk
 
 class Possibilities:
     def __init__(self):
