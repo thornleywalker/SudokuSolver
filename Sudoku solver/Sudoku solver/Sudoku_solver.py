@@ -16,12 +16,13 @@ class Possibilities:
     def remove(self, number):
         ###
         # Removes given value from internal list
+        # Returns True if removed, False if not there
         ###
         try:
             self.__internal.remove(number)
         except:
-            pass
-        pass
+            return False
+        return True
     def getList(self):
         ###
         # Returns internal list
@@ -38,12 +39,6 @@ class Possibilities:
         ###
         self.__internal.clear()
         pass
-
-class DeepCheck:
-    def __init(self):
-        rows = set()
-        cols = set()
-        pass
 class OneSquare:
     def __init__(self):
         ###
@@ -57,15 +52,17 @@ class OneSquare:
         # Sets value to given value
         # Empties possibilities
         ###
-        self.value = val
-        self.options.emptyPossibilities()
+        if self.value == 0:
+            if val != 0:
+                self.value = val
+                self.options.emptyPossibilities()
         pass
     def removePossibility(self, val):
         ###
         # Removes given value from possibilities
         # Returns true if value was removed, false if not there
         ###
-        self.options.remove(val)
+        return self.options.remove(val)
 class ThreeSquare:
     def __init__(self):
         ###
@@ -153,6 +150,7 @@ class Board:
                             [ThreeSquare(),ThreeSquare(),ThreeSquare()],
                             [ThreeSquare(),ThreeSquare(),ThreeSquare()]])
         self.__solved = set()
+        self.recursed = False
         pass
     def fill(self, inString:str):
         ###
@@ -174,6 +172,10 @@ class Board:
                 self.set(row, col, val)
             pass
         pass
+    def copy(self, toCopy):
+        for row in range(1,10):
+            for col in range(1,10):
+                self.set(row, col, toCopy.at(row, col).value)
     def at(self, row, col):
         ###
         # Returns the OneSquare at the given location
@@ -295,6 +297,26 @@ class Board:
                         deepCols[key] = list()
                     deepCols[key].append({'boxRow' : boxRow + 1, 'col' : tempCols[key]})
         pass #all checks done, lets get changing
+        for poss in deepCols:
+            for item in deepCols[poss]:
+                col = item['col']
+                toUpdate = list(range(1,10))
+                toUpdate.remove((item['boxRow']*3))
+                toUpdate.remove((item['boxRow']*3)-1)
+                toUpdate.remove((item['boxRow']*3)-2)
+                for row in toUpdate:
+                    if(self.at(row, col).removePossibility(poss)):
+                        boardChanged = True
+        for poss in deepRows:
+            for item in deepRows[poss]:
+                row = item['row']
+                toUpdate = list(range(1,10))
+                toUpdate.remove((item['boxCol']*3))
+                toUpdate.remove((item['boxCol']*3)-1)
+                toUpdate.remove((item['boxCol']*3)-2)
+                for col in toUpdate:
+                    if(self.at(row, col).removePossibility(poss)):
+                        boardChanged = True
         return boardChanged
     def solveCheck(self):
         ###
@@ -324,11 +346,12 @@ class Board:
     def solve(self):
         ###
         # Solves sudoku board
+        # Returns true if solved
         ###
         # loop until solved
         boardChanged = True
         while boardChanged:
-            if(self.solveCheck()): break
+            if(self.solveCheck()): return True
             boardChanged = False
             #basic solving
             for row in range(1, 10):
@@ -336,9 +359,24 @@ class Board:
                     if self.checkSquare(row, col): boardChanged = True
             #deep check
             if(not(boardChanged)):
+                print('performing deep check')
                 if(self.deepCheck()):
                     boardChanged = True
-            pass
+            #last resort
+            if not(self.recursed):
+                if(not(boardChanged)):
+                    for row in range(1, 10):
+                        for col in range(1,10):
+                            for poss in self.at(row, col).options.getList():
+                                print('beggining test probe')
+                                newAttempt = Board()
+                                newAttempt.copy(self)
+                                newAttempt.recursed = True
+                                newAttempt.set(row, col, poss)
+                                if(newAttempt.solve()):
+                                    self.copy(newAttempt)
+                                    return True
+        return False
     def toString(self):
         ###
         # Returns ascii sudoku board
@@ -358,15 +396,15 @@ def main():
     currBoard = Board()
 
     ## testString
-    fillString ="""230700001,
-                   000300900,
-                   060200400,
-                   000000000,
-                   020004100,
-                   050600070,
-                   005006009,
-                   903000000,
-                   010008500"""
+    fillString ="""385000000,
+                   001009000,
+                   002061000,
+                   020050008,
+                   000030000,
+                   000100035,
+                   000704600,
+                   800000200,
+                   070000010"""
     currBoard.fill(fillString)
 
 
