@@ -39,6 +39,11 @@ class Possibilities:
         self.__internal.clear()
         pass
 
+class DeepCheck:
+    def __init(self):
+        rows = set()
+        cols = set()
+        pass
 class OneSquare:
     def __init__(self):
         ###
@@ -58,9 +63,9 @@ class OneSquare:
     def removePossibility(self, val):
         ###
         # Removes given value from possibilities
+        # Returns true if value was removed, false if not there
         ###
         self.options.remove(val)
-
 class ThreeSquare:
     def __init__(self):
         ###
@@ -74,26 +79,80 @@ class ThreeSquare:
         ###
         # Returns the OneSquare at the given location
         ###
-        return self.__internal[row-1, col-1]
+        return self.__internal[row, col]
     def set(self, row, col, val):
         ###
         # Sets given square to given value.
         # Removes given value from possibilities of
         # other squares in the ThreeSquare
         ###
-        self.__internal[row-1, col-1].setValue(val)
+        self.__internal[row, col].setValue(val)
         for line in self.__internal:
             for square in line:
                 square.removePossibility(val)
+    def deepRowCheck(self):
+        ###
+        # Checks if any possibilities exist on only one row.
+        # Returns dictionary with {possibility : row} items
+        ###
+        returnDict = dict()
+        possibilityRows = {
+            1 : set(),
+            2 : set(),
+            3 : set(),
+            4 : set(),
+            5 : set(),
+            6 : set(),
+            7 : set(),
+            8 : set(),
+            9 : set()
+            }
+        for row in range(0,3):
+            for col in range(0,3):
+                if(self.at(row, col).value == 0):
+                    for possibility in self.at(row, col).options.getList():
+                        possibilityRows[possibility].add(row)
+        for possibility, rows in possibilityRows.items():
+            if(len(rows)==1):
+                returnDict[possibility] = (rows.pop() + 1)
+        return returnDict
+    def deepColCheck(self):
+        ###
+        # Checks if any possibilities exist on only one column.
+        # Returns dictionary with {col : possibility}
+        ###
+        returnDict = dict()
+        possibilityCols = {
+            1 : set(),
+            2 : set(),
+            3 : set(),
+            4 : set(),
+            5 : set(),
+            6 : set(),
+            7 : set(),
+            8 : set(),
+            9 : set()
+            }
+        for row in range(0,3):
+            for col in range(0,3):
+                if(self.at(row, col).value == 0):
+                    for possibility in self.at(row, col).options.getList():
+                        possibilityCols[possibility].add(col)
+        for possibility, cols in possibilityCols.items():
+            if(len(cols)==1):
+                returnDict[possibility] = (cols.pop() + 1)
+        return returnDict
 
 class Board:
     def __init__(self):
         ###
         # Initializes 3x3 array of ThreeSquares
+        # Initializes set of solved numbers
         ##
         self.__internal = array([[ThreeSquare(),ThreeSquare(),ThreeSquare()],
                             [ThreeSquare(),ThreeSquare(),ThreeSquare()],
                             [ThreeSquare(),ThreeSquare(),ThreeSquare()]])
+        self.__solved = set()
         pass
     def fill(self, inString:str):
         ###
@@ -133,6 +192,8 @@ class Board:
         # ThreeSquare's set method removes given value from 
         # possibilities of other squares in the ThreeSquare
         ###
+        if(row==0 or col==0):
+            print('Incorrect inputs to Board.set')
         threeRow = (row-1) // 3
         oneRow = (row-1) % 3
         threeCol = (col-1) // 3
@@ -209,17 +270,75 @@ class Board:
         # Performs deep check:
         # - if a possibility can only be in one row/column of a ThreeSquare,
         #   removes that posibility from that row/column in adjacent ThreeSquares
+        # Returns True if board changed, False otherwise
         ###
-        pass
+        boardChanged = False
+        deepRows = dict()
+        deepCols = dict()
+        for boxRow in range(0,3):
+            for boxCol in range(0,3):
+                box = self.__internal[boxRow, boxCol]
+                tempRows = box.deepRowCheck()
+                tempCols = box.deepColCheck()
+
+                for key in tempRows:
+                    tempRows[key] += (3 * boxRow)
+                for key in tempCols:
+                    tempCols[key] += (3 * boxCol)
+
+                for key in tempRows:
+                    if not(key in deepRows):
+                        deepRows[key] = list()
+                    deepRows[key].append({'boxCol' : boxCol + 1, 'row' : tempRows[key]})
+                for key in tempCols:
+                    if not(key in deepCols):
+                        deepCols[key] = list()
+                    deepCols[key].append({'boxRow' : boxRow + 1, 'col' : tempCols[key]})
+        pass #all checks done, lets get changing
+        return boardChanged
     def solveCheck(self):
         ###
         # Checks if board is solved
+        # Updates unsolved list
         ###
-        isSolved = True
+        count = {
+            0 : 0,
+            1 : 0,
+            2 : 0,
+            3 : 0,
+            4 : 0,
+            5 : 0,
+            6 : 0,
+            7 : 0,
+            8 : 0,
+            9 : 0
+            }
         for row in range(1,10):
             for col in range(1,10):
-                if(len(self.at(row, col).options.getList()) != 0):
-                    isSolved = False
+                count[self.at(row, col).value] += 1
+        for i in range(1,10):
+            if(count[i] == 9):
+                self.__solved.add(i)
+        if(len(self.__solved) == 9): return True
+        else: return False
+    def solve(self):
+        ###
+        # Solves sudoku board
+        ###
+        # loop until solved
+        boardChanged = True
+        while boardChanged:
+            if(self.solveCheck()): break
+            boardChanged = False
+            #basic solving
+            for row in range(1, 10):
+                for col in range(1, 10):
+                    if self.checkSquare(row, col): boardChanged = True
+            #deep check
+            if(not(boardChanged)):
+                if(self.deepCheck()):
+                    boardChanged = True
+            pass
     def toString(self):
         ###
         # Returns ascii sudoku board
@@ -256,17 +375,7 @@ def main():
             print('{},{}={}'.format(i,j,currBoard.at(i, j).options.getList()))
     print(currBoard.toString())
 
-    # loop until solved
-    boardChanged = True
-    while boardChanged:
-        boardChanged = False
-        #basic solving
-        for row in range(1, 10):
-            for col in range(1, 10):
-                if currBoard.checkSquare(row, col): boardChanged = True
-        #deep check
-        currBoard.deepCheck()
-        pass
+    currBoard.solve()
 
     for i in range(1,10):
         for j in range(1,10):
