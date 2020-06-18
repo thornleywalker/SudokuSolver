@@ -138,7 +138,6 @@ class ThreeSquare:
             if(len(cols)==1):
                 returnDict[possibility] = (cols.pop() + 1)
         return returnDict
-
 class Board:
     def __init__(self):
         ###
@@ -340,7 +339,9 @@ class Board:
         for i in range(1,10):
             if(count[i] == 9):
                 self.__solved.add(i)
-        if(len(self.__solved) == 9): return True
+        if(len(self.__solved) == 9):
+            print('Sudoku Solved')
+            return True
         else: return False
     def solve(self):
         ###
