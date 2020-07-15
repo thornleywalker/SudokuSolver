@@ -22,7 +22,7 @@ impl Board
 
         return_board
     }
-    fn at(&self, row:usize, col:usize) -> Square
+    fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
         let box_row = row % 3;
         let box_col = col % 3;
@@ -32,19 +32,10 @@ impl Board
 
         self.boxes[box_row][box_col].at(square_row, square_col)
     }
-    fn set(&self, row:usize, col:usize, val:i32)
-    {
-        let box_row = row % 3;
-        let box_col = col % 3;
-
-        let square_row = row / 3;
-        let square_col = col / 3;
-
-        self.boxes[box_row][box_col].set(square_row, square_col, val);
-    }
-    fn solve(&self)
+    fn solve(&mut self)
     {
         println!("Solving Sudoku Board");
+        self.at(2, 3);
     }
 }
 
@@ -60,13 +51,9 @@ impl Box
                          vec![Square::init(),Square::init(),Square::init(),],
                          vec![Square::init(),Square::init(),Square::init(),]]}
     }
-    fn at(&self, row:usize, col:usize) -> Square
+    fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
-        self.squares[row][col]
-    }
-    fn set(&self, row:usize, col:usize, val:i32)
-    {
-        self.squares[row][col] = Square::Value(val);
+        self.squares[row][col].at()
     }
 }
 
@@ -80,5 +67,9 @@ impl Square
     fn init() -> Square
     {
         Square::Possibilities(vec![1,2,3,4,5,6,7,8,9])
+    }
+    fn at(&mut self) -> &mut Square
+    {
+        self
     }
 }
