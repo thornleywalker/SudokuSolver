@@ -1,6 +1,6 @@
 fn main() {
     println!("Hello, world!");
-    let curr_board = Board::init();
+    let mut curr_board = Board::init();
     curr_board.solve();
 }
 

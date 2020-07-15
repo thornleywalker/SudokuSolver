@@ -1,1 +1,0 @@
-C:\Users\User\Documents\GitHub\SudokuSolver\Sudoku\ Solver\ Rust\sudoku_solver\target\debug\sudoku_solver.exe: C:\Users\User\Documents\GitHub\SudokuSolver\Sudoku\ Solver\ Rust\sudoku_solver\src\main.rs
