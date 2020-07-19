@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 fn main() {
     println!("Hello, world!");
-    let mut curr_board = Board::from_list();
+    let mut curr_board = Board::from_list(String::from("testString"));
     
     curr_board.solve();
     curr_board.to_string();
@@ -14,18 +14,18 @@ struct Board
 }
 impl Board
 {
-    //initialize a 3x3 array of Boxes
-    fn init() -> Board
+    //newialize a 3x3 array of Boxes
+    fn new() -> Board
     {
-        Board{boxes:vec![vec![Box::init(), Box::init(), Box::init()],
-                         vec![Box::init(), Box::init(), Box::init()],
-                         vec![Box::init(), Box::init(), Box::init()]]}
+        Board{boxes:vec![vec![Box::new(), Box::new(), Box::new()],
+                         vec![Box::new(), Box::new(), Box::new()],
+                         vec![Box::new(), Box::new(), Box::new()]]}
     }
     //create a board from a string of numbers
     // FIXME
-    fn from_list() -> Board
+    fn from_list(in_string: String) -> Board
     {
-        let return_board = Board::init();
+        let return_board = Board::new();
 
         return_board
     }
@@ -65,6 +65,7 @@ impl Board
     // - for each possibility in the Square:
     //      - it is the only one of that possibility in the row
     //      - it is the only one of that possibility in the column
+    //      - it is the only one of that possibility in the Box
     //if something changes, returns true,
     //otherwise returns false
     fn check_square(&mut self, row:usize, col:usize) -> bool
@@ -75,14 +76,55 @@ impl Board
         //check each possibility for uniqueness in the row
 
         //check each possibility for uniqueness in the column
+
+        //check each possibility for uniqueness in the Box
         
         changed
     }
-    //main solve function
-    fn solve(&mut self)
+    //performs a deep check:
+    // - 
+    fn deep_check(&mut self) -> bool
     {
+        let mut changed = false;
+
+        changed
+    }
+    fn solve_check(&mut self) -> bool
+    {
+        let solved = false;
+        solved
+    }
+    //main solve function
+    fn solve(&mut self) -> bool
+    {
+        let mut solved = false;
+        let mut board_changed = true;
+        while board_changed
+        {
+            //solve check
+            if self.solve_check(){
+                solved = true;
+                return solved;
+            }
+            board_changed = false;
+            //basic solving
+            for row in 0..9{
+                for col in 0..9{
+                    if self.check_square(row, col){
+                        board_changed = true;
+                    }
+                }
+            }
+            //deep check
+            if !board_changed{
+                if self.deep_check(){
+                    board_changed = true;
+                }
+            }
+            //last resort: brute force recursion
+        }
         println!("Solving Sudoku Board");
-        self.set(2, 2, 3);
+        solved
     }
     //prints possibilities/values for every square
     fn to_string(&mut self)
@@ -104,12 +146,12 @@ struct Box
 }
 impl Box
 {
-    //initializes a 3x3 array of Squares with all possibilities in all Squares
-    fn init() -> Box
+    //newializes a 3x3 array of Squares with all possibilities in all Squares
+    fn new() -> Box
     {
-        Box{squares:vec![vec![Square::init(),Square::init(),Square::init(),],
-                         vec![Square::init(),Square::init(),Square::init(),],
-                         vec![Square::init(),Square::init(),Square::init(),]]}
+        Box{squares:vec![vec![Square::new(),Square::new(),Square::new(),],
+                         vec![Square::new(),Square::new(),Square::new(),],
+                         vec![Square::new(),Square::new(),Square::new(),]]}
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
@@ -137,11 +179,11 @@ enum Square
 impl Square
 {
     //creates a Square with all possibilities
-    fn init() -> Square
+    fn new() -> Square
     {
-        let initial_set: HashSet<i32> = 
+        let newial_set: HashSet<i32> = 
             [1, 2, 3, 4, 5, 6, 7, 8, 9].iter().cloned().collect();
-        Square::Possibilities(initial_set)
+        Square::Possibilities(newial_set)
     }
     //sets Square to Value with val
     fn set(&mut self, val:i32)
