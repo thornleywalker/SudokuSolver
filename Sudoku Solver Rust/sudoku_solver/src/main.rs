@@ -71,18 +71,39 @@ impl Board
     fn check_square(&mut self, row:usize, col:usize) -> bool
     {
         let mut changed = false;
-        //check for a single possibility
-        if self.at(row, col).single_possibility_check() {changed = true};
-        //check each possibility for uniqueness in the row
+        match self.at(row, col)
+        {
+            Square::Possibilities(values) =>
+            {
+                //check for a single possibility
+                if values.len() == 1
+                {
+                    for val in values.iter()
+                    {
+                        //self.set(row, col, *val);
+                        
+                    }
+                    
+                    changed = true;
+                    return changed
+                };
+                //check each possibility for uniqueness in the row
+                for poss in values.iter()
+                {
 
-        //check each possibility for uniqueness in the column
+                }
+                //check each possibility for uniqueness in the column
 
-        //check each possibility for uniqueness in the Box
-        
+                //check each possibility for uniqueness in the Box
+            },
+            Square::Value(_val) => {}
+        }
         changed
     }
     //performs a deep check:
-    // - 
+    // - if a possibility can only be in one row/column of a Box,
+    //   removes that possibility from that row/column in adjacent Boxes
+    //returns true if board changed, false otherwise
     fn deep_check(&mut self) -> bool
     {
         let mut changed = false;
@@ -181,9 +202,9 @@ impl Square
     //creates a Square with all possibilities
     fn new() -> Square
     {
-        let newial_set: HashSet<i32> = 
+        let new_set: HashSet<i32> = 
             [1, 2, 3, 4, 5, 6, 7, 8, 9].iter().cloned().collect();
-        Square::Possibilities(newial_set)
+        Square::Possibilities(new_set)
     }
     //sets Square to Value with val
     fn set(&mut self, val:i32)
