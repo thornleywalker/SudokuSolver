@@ -1,10 +1,24 @@
 use std::collections::HashSet;
 
 fn main() {
-    println!("Hello, world!");
-    let mut curr_board = Board::from_list(String::from("testString"));
-    
+    let mut curr_board = 
+        Board::from_list(
+            String::from(
+                "000000609,\
+                 100004000,\
+                 005306821,\
+                 004670050,\
+                 007000900,\
+                 000540000,\
+                 370405206,\
+                 000000510,\
+                 060020037"
+            ));
+    println!("initial board");
+    curr_board.to_string();
+
     curr_board.solve();
+    println!("board after solve");
     curr_board.to_string();
 }
 
@@ -14,7 +28,7 @@ struct Board
 }
 impl Board
 {
-    //newialize a 3x3 array of Boxes
+    //initialize a 3x3 array of Boxes
     fn new() -> Board
     {
         Board{boxes:vec![vec![Box::new(), Box::new(), Box::new()],
@@ -25,18 +39,37 @@ impl Board
     // FIXME
     fn from_list(in_string: String) -> Board
     {
-        let return_board = Board::new();
-
+        let mut return_board = Board::new();
+        let mut row = 0;
+        let mut col = 0;
+        for curr_char in in_string.chars()
+        {
+            if curr_char == ','
+            {
+                row += 1;
+                col = 0;
+            }
+            else
+            {
+                let val = curr_char.to_digit(16);
+                match val
+                {
+                    Some(num) => if num != 0 { return_board.set(row, col, num as i32) },
+                    None => {}
+                }
+                col += 1;
+            }
+        }
         return_board
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
-        let box_row = row % 3;
-        let box_col = col % 3;
+        let box_row = row / 3;
+        let box_col = col / 3;
 
-        let square_row = row / 3;
-        let square_col = col / 3;
+        let square_row = row % 3;
+        let square_col = col % 3;
 
         self.boxes[box_row][box_col].at(square_row, square_col)
     }
@@ -44,6 +77,7 @@ impl Board
     //removes val from all Squares in row, column, and Box
     fn set(&mut self, row:usize, col:usize, val:i32)
     {
+        println!["setting {},{} to {}", row+1, col+1, val];
         self.at(row, col).set(val);
         //remove val from possibilities in the same column
         for _row in 0..9
@@ -56,8 +90,8 @@ impl Board
             self.at(row, _col).remove(val);
         }
         //remove val from possibilities in the same Box
-        let box_row = row % 3;
-        let box_col = col % 3;
+        let box_row = row / 3;
+        let box_col = col / 3;
         self.boxes[box_row][box_col].remove(val);
     }
     //checks the given square for the following
@@ -79,8 +113,9 @@ impl Board
                 //check for a single possibility
                 if values.len() == 1
                 {
+                    //set square to only possibility
                     let mut new_value = 0;
-                    for val in values.iter() {new_value = *val;}
+                    for val in values.iter() { new_value = *val; }
                     self.set(row, col, new_value);
                     changed = true;
                 }
@@ -88,30 +123,37 @@ impl Board
                 {
                     for val in values.iter()
                     {
-                        let mut row_contains = false;
-                        let mut col_contains = false;
-                        let mut box_contains = false;
+                        let mut row_unique = true;
+                        let mut col_unique = true;
+                        let mut box_unique = true;
                         //check for possibility uniqueness in row
-                        for _col in 1..9 {
-                            if self.at(row, _col).contains(*val) { row_contains = true; }
+                        for _col in 0..9 {
+                            if col != _col{
+                                if self.at(row, _col).contains(*val) { row_unique = false; break; }
+                            }
                         }
                         //check for possibility uniqueness in column
-                        for _row in 1..9 {
-                            if self.at(_row, col).contains(*val) { col_contains = true; }
+                        for _row in 0..9 {
+                            if row != _row{
+                                if self.at(_row, col).contains(*val) { col_unique = false; break; }
+                            }
                         }
                         //check for possibility uniqueness in Box
-                        let box_row = row % 3;
-                        let box_col = col % 3;
-                        if self.boxes[box_row][box_col].contains(*val) { box_contains = true; }
+                        let box_row = row / 3;
+                        let box_col = col / 3;
+                        if self.boxes[box_row][box_col].contains(*val) { box_unique = false; }
+
+                        if row_unique || col_unique || box_unique
+                        {
+                            self.set(row, col, *val);
+                            changed = true;
+                            break;
+                        }
                     }
                 }
             }
-            None =>
-            {
-                
-            }
+            None => { }
         }
-
         changed
     }
     //performs a deep check:
@@ -132,10 +174,14 @@ impl Board
     //main solve function
     fn solve(&mut self) -> bool
     {
+        println!("Solving Sudoku Board");
         let mut solved = false;
         let mut board_changed = true;
+        let mut loop_count = 0;
         while board_changed
         {
+            loop_count += 1;
+            println!("loop {}", loop_count);
             //solve check
             if self.solve_check(){
                 solved = true;
@@ -158,7 +204,6 @@ impl Board
             }
             //last resort: brute force recursion
         }
-        println!("Solving Sudoku Board");
         solved
     }
     //prints possibilities/values for every square
@@ -184,9 +229,9 @@ impl Box
     //newializes a 3x3 array of Squares with all possibilities in all Squares
     fn new() -> Box
     {
-        Box{squares:vec![vec![Square::new(),Square::new(),Square::new(),],
-                         vec![Square::new(),Square::new(),Square::new(),],
-                         vec![Square::new(),Square::new(),Square::new(),]]}
+        Box{squares:vec![vec![Square::new(),Square::new(),Square::new()],
+                         vec![Square::new(),Square::new(),Square::new()],
+                         vec![Square::new(),Square::new(),Square::new()]]}
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
@@ -196,9 +241,16 @@ impl Box
     //removes val from possibilities of each Square
     fn remove(&mut self, val:i32)
     {
-        for square_row in &mut self.squares {
-            for square in square_row {
-                square.remove(val);
+        // for square_row in &mut self.squares {
+        //     for square in square_row {
+        //         square.remove(val);
+        //     }
+        // }
+        for row in 0..3
+        {
+            for col in 0..3
+            {
+                self.squares[row][col].remove(val);
             }
         }
     }
