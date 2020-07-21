@@ -71,33 +71,47 @@ impl Board
     fn check_square(&mut self, row:usize, col:usize) -> bool
     {
         let mut changed = false;
-        match self.at(row, col)
+
+        match self.at(row, col).get_possibilities()
         {
-            Square::Possibilities(values) =>
+            Some(values) =>
             {
                 //check for a single possibility
                 if values.len() == 1
                 {
+                    let mut new_value = 0;
+                    for val in values.iter() {new_value = *val;}
+                    self.set(row, col, new_value);
+                    changed = true;
+                }
+                else
+                {
                     for val in values.iter()
                     {
-                        //self.set(row, col, *val);
-                        
+                        let mut row_contains = false;
+                        let mut col_contains = false;
+                        let mut box_contains = false;
+                        //check for possibility uniqueness in row
+                        for _col in 1..9 {
+                            if self.at(row, _col).contains(*val) { row_contains = true; }
+                        }
+                        //check for possibility uniqueness in column
+                        for _row in 1..9 {
+                            if self.at(_row, col).contains(*val) { col_contains = true; }
+                        }
+                        //check for possibility uniqueness in Box
+                        let box_row = row % 3;
+                        let box_col = col % 3;
+                        if self.boxes[box_row][box_col].contains(*val) { box_contains = true; }
                     }
-                    
-                    changed = true;
-                    return changed
-                };
-                //check each possibility for uniqueness in the row
-                for poss in values.iter()
-                {
-
                 }
-                //check each possibility for uniqueness in the column
-
-                //check each possibility for uniqueness in the Box
-            },
-            Square::Value(_val) => {}
+            }
+            None =>
+            {
+                
+            }
         }
+
         changed
     }
     //performs a deep check:
@@ -182,13 +196,22 @@ impl Box
     //removes val from possibilities of each Square
     fn remove(&mut self, val:i32)
     {
-        for square_row in &mut self.squares
-        {
-            for square in square_row
-            {
+        for square_row in &mut self.squares {
+            for square in square_row {
                 square.remove(val);
             }
         }
+    }
+    //checks each Square in the Box if it contains the given value
+    fn contains(&mut self, val:i32) -> bool
+    {
+        let mut contains = false;
+        for square_row in &mut self.squares {
+            for square in square_row {
+                if square.contains(val) { contains = true; }
+            }
+        }
+        contains
     }
 }
 
@@ -232,10 +255,18 @@ impl Square
             Square::Value(_val) => false
         }
     }
-    //checks if Square has a single possibility, changes to Value if true
-    //returns true if only one possibility
-    //returns false if Square is Value
-    fn single_possibility_check(&mut self) -> bool
+    fn get_possibilities(&self) -> Option<HashSet<i32>>
+    {
+        match self
+        {
+            Square::Possibilities(values) => Some(values.clone()),
+            Square::Value(_val) => None
+        }
+    }
+    //checks if Square has a single possibility
+    //returns true and the value if only one possibility
+    //returns false and None if Square is Value
+    fn single_possibility_check(&mut self) -> Option<i32>
     {
         match self
         {
@@ -244,16 +275,12 @@ impl Square
                 if values.len() == 1
                 {
                     let mut new_val = 0;
-                    for val in values.drain()
-                    {
-                        new_val = val;
-                    }
-                    self.set(new_val);
-                    true
+                    for val in values.iter() { new_val = *val; }
+                    Some(new_val)
                 }
-                else {false}
+                else {None}
             }
-            Square::Value(_val) => false
+            Square::Value(_val) => None
         }
     }
     fn to_string(&self) -> String
@@ -263,7 +290,9 @@ impl Square
         {
             Square::Possibilities(values) => 
             {
+                return_string += "( ";
                 for val in values { return_string += &format!("{}, ", val); }
+                return_string += ")";
             },
             Square::Value(val) =>
             {
