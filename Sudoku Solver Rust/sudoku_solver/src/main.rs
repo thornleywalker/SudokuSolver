@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+
 fn main() {
     let mut curr_board = 
         Board::from_list(
@@ -185,6 +186,7 @@ impl Board
             //solve check
             if self.solve_check(){
                 solved = true;
+                println!("solved");
                 return solved;
             }
             board_changed = false;
