@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 
 fn main() {
@@ -163,8 +163,74 @@ impl Board
     //returns true if board changed, false otherwise
     fn deep_check(&mut self) -> bool
     {
+        println!("running deep check");
         let mut changed = false;
+        let mut deep_rows: HashMap<i32, HashMap<&str, i32>> = HashMap::new();
+        let mut deep_cols: HashMap<i32, HashMap<&str, i32>> = HashMap::new();
 
+        //get values and rows/cols
+        for box_row in 0..3
+        {
+            for box_col in 0..3
+            {
+                let curr_box = &mut self.boxes[box_row][box_col];
+                let mut temp_rows = HashMap::new();
+                let mut temp_cols = HashMap::new();
+                for (key, val) in curr_box.deep_row_check() {
+                    temp_rows.insert(key, val + 3*(box_row as i32));
+                }
+                for (key, val) in curr_box.deep_col_check() {
+                    temp_cols.insert(key, val + 3*(box_col as i32));
+                }
+                
+                for (key, row) in temp_rows {
+                    match deep_rows.get_mut(&key) {
+                        Some(map) => {
+                            map.insert(&"row", row);
+                            map.insert(&"box_col", box_col as i32);
+                        },
+                        None => {
+                            deep_rows.insert(key, HashMap::new());
+                            match deep_rows.get_mut(&key) {
+                                Some(set) => {set.insert(&"box_col", row);},
+                                None => {}
+                            }
+                        }
+                    }
+                }
+                for (key, col) in temp_cols {
+                    match deep_cols.get_mut(&key) {
+                        Some(map) => {
+                            map.insert(&"col", col);
+                            map.insert(&"box_row", box_row as i32);
+                        },
+                        None => {
+                            deep_cols.insert(key, HashMap::new());
+                            match deep_cols.get_mut(&key) {
+                                Some(map) => {
+                                    map.insert(&"col", col);
+                                    map.insert(&"box_row", box_row as i32);
+                                },
+                                None => {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //do changing
+        for (poss, map) in deep_rows {
+            let row:i32 = map[&"row"];
+            let mut update_cols: HashSet<_> = [0,1,2,3,4,5,6,7,8].iter().cloned().collect();
+            update_cols.remove(&(map[&"box_col"]*3+0));
+            update_cols.remove(&(map[&"box_col"]*3+1));
+            update_cols.remove(&(map[&"box_col"]*3+2));
+            for col in update_cols {
+                if self.at(row as usize, col as usize).remove(poss) {
+                    changed = true;
+                }
+            }
+        }
         changed
     }
     fn solve_check(&mut self) -> bool
@@ -267,6 +333,80 @@ impl Box
         }
         contains
     }
+    fn deep_row_check(&mut self) -> HashMap<i32,i32>
+    {
+        let mut return_map = HashMap::new();
+        let mut possibility_rows = HashMap::new();
+
+        //initialize possibility_rows with empty hash sets
+        for i in 1..10 {
+            possibility_rows.insert(i, HashSet::new());
+        }
+        //get which rows each possibility can be in
+        for square_row in 0..3 {
+            for square_col in 0..3 {
+                match &self.squares[square_row][square_col] {
+                    Square::Possibilities(values) => {
+                        for val in values.iter() {
+                            match possibility_rows.get_mut(&val) {
+                                Some(set) => { set.insert(square_row); },
+                                None => {}
+                            }
+                        }
+                    },
+                    Square::Value(_) => {}
+                }
+            }
+        }
+
+        //if a possibility can only be in a single row, add to return_map
+        for (poss, rows) in possibility_rows {
+            if rows.len() == 1 {
+                for row in rows.iter() {
+                    return_map.insert(poss, *row as i32);
+                }
+            }
+        }
+
+        return_map
+    }
+    fn deep_col_check(&mut self) -> HashMap<i32, i32>
+    {
+        let mut return_map = HashMap::new();
+        let mut possibility_cols = HashMap::new();
+
+        //initialize possibility_cols with empty hash sets
+        for i in 1..10 {
+            possibility_cols.insert(i, HashSet::new());
+        }
+        //get which cols each possibility can be in
+        for square_row in 0..3 {
+            for square_col in 0..3 {
+                match &self.squares[square_row][square_col] {
+                    Square::Possibilities(values) => {
+                        for val in values.iter() {
+                            match possibility_cols.get_mut(&val) {
+                                Some(set) => { set.insert(square_col); },
+                                None => {}
+                            }
+                        }
+                    },
+                    Square::Value(_) => {}
+                }
+            }
+        }
+
+        //if a possibility can only be in a single row, add to return_map
+        for (poss, cols) in possibility_cols {
+            if cols.len() == 1 {
+                for col in cols.iter() {
+                    return_map.insert(poss, *col as i32);
+                }
+            }
+        }
+
+        return_map
+    }
 }
 
 enum Square
@@ -299,7 +439,7 @@ impl Square
         }
     }
     //removes val from set of possibilities
-    //returns true if value was removes, false if not present
+    //returns true if value was removed, false if not present
     //returns false if Square is Value
     fn remove(&mut self, val:i32) -> bool
     {
