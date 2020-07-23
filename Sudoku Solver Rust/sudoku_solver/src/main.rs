@@ -1,5 +1,26 @@
 use std::{char, collections::{HashSet, HashMap}};
 
+const BASIC_TEST_1: &'static str = "500407903,002010087,100680004,800300700,026001345,470050,000032409,030008062,009760508";
+const BASIC_TEST_2: &'static str = "060209,000030010,100600009,420500090,005302860,083100024,870906035,340050270,206073001";
+const BASIC_TEST_3: &'static str = "123085400,000034026,006010003,007920,390000062,005473009,072000901,000107040,950342008";
+
+const DEEP_SOLVE_TEST_1: &'static str = "000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400";
+const DEEP_SOLVE_TEST_2: &'static str = "000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400";
+const DEEP_SOLVE_TEST_3: &'static str = "000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400";
+
+const LAST_RESORT_TEST_1: &'static str = "004000057,000000390,000106,1059,940200001,000003,260008,080000700,000500020";
+const LAST_RESORT_TEST_2: &'static str = "010086007,000004905,000100,070050032,00,000090700,006010009,340000001,800030050";
+const LAST_RESORT_TEST_3: &'static str = "";
+
+const UNSOLVABLE_TEST_1: &'static str = "";
+const UNSOLVABLE_TEST_2: &'static str = "";
+const UNSOLVABLE_TEST_3: &'static str = "";
+
+const ERROR_TEST_1: &'static str = "";
+const ERROR_TEST_2: &'static str = "";
+const ERROR_TEST_3: &'static str = "";
+
+
 
 fn main() {
     let mut curr_board = 
@@ -16,8 +37,8 @@ fn main() {
         //          000000000"
         //     ));
         Board::from_list(
-            //String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400")   //basic solving test
-            String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400") //deep check test
+            //String::from("BASIC_TEST")   //basic solving test
+            String::from("") //deep check test
             //String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400")
         );
     println!("initial board");
