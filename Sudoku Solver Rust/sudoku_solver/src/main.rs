@@ -1,26 +1,31 @@
-use std::collections::{HashSet, HashMap};
+use std::{char, collections::{HashSet, HashMap}};
 
 
 fn main() {
     let mut curr_board = 
+        // Board::from_list(
+        //     String::from(
+        //         "004300080,\
+        //          000600009,\
+        //          061900000,\
+        //          020490000,\
+        //          503000900,\
+        //          000062003,\
+        //          300004568,\
+        //          780000040,\
+        //          000000000"
+        //     ));
         Board::from_list(
-            String::from(
-                "000000609,\
-                 100004000,\
-                 005306821,\
-                 004670050,\
-                 007000900,\
-                 000540000,\
-                 370405206,\
-                 000000510,\
-                 060020037"
-            ));
+            //String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400")   //basic solving test
+            String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400") //deep check test
+            //String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400")
+        );
     println!("initial board");
-    curr_board.to_string();
+    curr_board.to_display();
 
     curr_board.solve();
     println!("board after solve");
-    curr_board.to_string();
+    curr_board.to_display();
 }
 
 struct Board
@@ -165,9 +170,13 @@ impl Board
     {
         println!("running deep check");
         let mut changed = false;
-        let mut deep_rows: HashMap<i32, HashMap<&str, i32>> = HashMap::new();
-        let mut deep_cols: HashMap<i32, HashMap<&str, i32>> = HashMap::new();
+        let mut deep_rows: HashMap<i32, HashMap<i32, i32>> = HashMap::new();
+        let mut deep_cols: HashMap<i32, HashMap<i32, i32>> = HashMap::new();
 
+        let row_string = 7;
+        let col_string = 8;
+        let box_col_string = 9;
+        let box_row_string = 10;
         //get values and rows/cols
         for box_row in 0..3
         {
@@ -186,13 +195,16 @@ impl Board
                 for (key, row) in temp_rows {
                     match deep_rows.get_mut(&key) {
                         Some(map) => {
-                            map.insert(&"row", row);
-                            map.insert(&"box_col", box_col as i32);
+                            map.insert(row_string, row);
+                            map.insert(box_col_string, box_col as i32);
                         },
                         None => {
                             deep_rows.insert(key, HashMap::new());
                             match deep_rows.get_mut(&key) {
-                                Some(set) => {set.insert(&"box_col", row);},
+                                Some(map) => {
+                                    map.insert(row_string, row);
+                                    map.insert(box_col_string, box_col as i32);
+                                },
                                 None => {}
                             }
                         }
@@ -201,15 +213,15 @@ impl Board
                 for (key, col) in temp_cols {
                     match deep_cols.get_mut(&key) {
                         Some(map) => {
-                            map.insert(&"col", col);
-                            map.insert(&"box_row", box_row as i32);
+                            map.insert(col_string, col);
+                            map.insert(box_row_string, box_row as i32);
                         },
                         None => {
                             deep_cols.insert(key, HashMap::new());
                             match deep_cols.get_mut(&key) {
                                 Some(map) => {
-                                    map.insert(&"col", col);
-                                    map.insert(&"box_row", box_row as i32);
+                                    map.insert(col_string, col);
+                                    map.insert(box_row_string, box_row as i32);
                                 },
                                 None => {}
                             }
@@ -220,14 +232,34 @@ impl Board
         }
         //do changing
         for (poss, map) in deep_rows {
-            let row:i32 = map[&"row"];
+            let row:i32 = match map.get(&row_string) {
+                Some(val) => *val,
+                None => {9}
+            };
             let mut update_cols: HashSet<_> = [0,1,2,3,4,5,6,7,8].iter().cloned().collect();
-            update_cols.remove(&(map[&"box_col"]*3+0));
-            update_cols.remove(&(map[&"box_col"]*3+1));
-            update_cols.remove(&(map[&"box_col"]*3+2));
+            update_cols.remove(&(map[&box_col_string]*3+0));
+            update_cols.remove(&(map[&box_col_string]*3+1));
+            update_cols.remove(&(map[&box_col_string]*3+2));
             for col in update_cols {
                 if self.at(row as usize, col as usize).remove(poss) {
                     changed = true;
+                    println!("deep check did something on rows");
+                }
+            }
+        }
+        for (poss, map) in deep_cols {
+            let col:i32 = match map.get(&col_string) {
+                Some(val) => *val,
+                None => {9}
+            };
+            let mut update_rows: HashSet<_> = [0,1,2,3,4,5,6,7,8].iter().cloned().collect();
+            update_rows.remove(&(map[&box_row_string]*3+0));
+            update_rows.remove(&(map[&box_row_string]*3+1));
+            update_rows.remove(&(map[&box_row_string]*3+2));
+            for row in update_rows {
+                if self.at(row as usize, col as usize).remove(poss) {
+                    changed = true;
+                    println!("deep check did something on cols");
                 }
             }
         }
@@ -269,6 +301,7 @@ impl Board
                 if self.deep_check(){
                     board_changed = true;
                 }
+                self.to_display();
             }
             //last resort: brute force recursion
         }
@@ -283,6 +316,25 @@ impl Board
             {
                 println!("({},{}): {}", row+1, col+1, self.at(row, col).to_string());
             }
+        }
+    }
+    fn to_display(&mut self)
+    {
+        for row in 0..9{
+            let mut display_string = String::new();
+            for col in 0..9{
+                display_string.push( match self.at(row, col){
+                    Square::Possibilities(_) => {'_'}
+                    Square::Value(val) => {
+                        match char::from_digit(*val as u32, 10){
+                            Some(val) => val,
+                            None =>{'x'}
+                        }
+                    }
+                });
+                display_string.push(' ');
+            }
+            println!("{}", display_string);
         }
     }
 
