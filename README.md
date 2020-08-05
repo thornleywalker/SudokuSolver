@@ -20,4 +20,5 @@ The algorithm is as follows
 - Recurse into basic solving and deep checks until the board is either solved, or cannot be solved (indicated by an unsolved square having no possibilities left)
 - If the board cannot be solved after choosing one of a square's possibilities, remove that possibility and try solving again
 - Repeat until solved (will solve any remaining sudoku)
+
 While this final step can technically solve any sudoku given enough time, it is extremely inefficient. Fortunately, it typically only needs to be used a few times for expert level Sudoku, and it can be optimized by choosing the square with the fewest possibilities (usually 2 or 3 after previous solving efforts).
