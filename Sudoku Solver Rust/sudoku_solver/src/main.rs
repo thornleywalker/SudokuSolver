@@ -17,7 +17,7 @@ const UNSOLVABLE_TEST_1: &'static str = "123085400,000034026,006010003,007920,39
 const UNSOLVABLE_TEST_2: &'static str = "020001084,008600250,005927,050000008,037000400,000304060,070000802,800003100,000210040";
 const UNSOLVABLE_TEST_3: &'static str = "22000382,580002000,305700000,700,500034000,003005002,000000080,60000200,00000001";
 
-const ERROR_TEST_1: &'static str = "";
+const ERROR_TEST_1: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua";
 const ERROR_TEST_2: &'static str = "";
 const ERROR_TEST_3: &'static str = "";
 
