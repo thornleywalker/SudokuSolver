@@ -1,5 +1,9 @@
 use std::{char, collections::{HashSet, HashMap}};
 
+const SOLVED_TEST_1: &'static str = "827154396,965327148,341689752,593468271,472513689,618972435,786235914,154796823,239841567";
+const SOLVED_TEST_2: &'static str = "";
+const SOLVED_TEST_3: &'static str = "";
+
 const BASIC_TEST_1: &'static str = "500407903,002010087,100680004,800300700,026001345,470050,000032409,030008062,009760508";
 const BASIC_TEST_2: &'static str = "060209,000030010,100600009,420500090,005302860,083100024,870906035,340050270,206073001";
 const BASIC_TEST_3: &'static str = "123085400,000034026,006010003,007920,390000062,005473009,072000901,000107040,950342008";
@@ -38,9 +42,6 @@ fn main() {
         //          000000000"
         //     ));
         Board::from_list(
-            //String::from("BASIC_TEST")   //basic solving test
-            String::from(UNSOLVABLE_TEST_3) //deep check test
-            //String::from("000006300,068007002,010008500,00,080050200,040001070,400010003,603000,020090400")
         );
     println!("initial board");
     curr_board.to_display();
@@ -64,7 +65,6 @@ impl Board
                          vec![Box::new(), Box::new(), Box::new()]]}
     }
     //create a board from a string of numbers
-    // FIXME
     fn from_list(in_string: String) -> Board
     {
         let mut return_board = Board::new();
@@ -287,6 +287,8 @@ impl Board
         }
         changed
     }
+    //checks current board for being solved
+    //counts number of each possibility, if all are 9, board is solved
     fn solve_check(&mut self) -> bool
     {
         let solved = false;
