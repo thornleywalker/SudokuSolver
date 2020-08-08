@@ -29,18 +29,6 @@ const ERROR_TEST_3: &'static str = "";
 
 fn main() {
     let mut curr_board = 
-        // Board::from_list(
-        //     String::from(
-        //         "004300080,\
-        //          000600009,\
-        //          061900000,\
-        //          020490000,\
-        //          503000900,\
-        //          000062003,\
-        //          300004568,\
-        //          780000040,\
-        //          000000000"
-        //     ));
         Board::from_list(
         );
     println!("initial board");
