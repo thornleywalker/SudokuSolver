@@ -15,28 +15,51 @@ const DEEP_SOLVE_TEST_3: &'static str = "020001084,008600250,005027,050000008,03
 const LAST_RESORT_TEST_1: &'static str = "004000057,000000390,000106,1059,940200001,000003,260008,080000700,000500020";
 const LAST_RESORT_TEST_2: &'static str = "010086007,000004905,000100,070050032,00,000090700,006010009,340000001,800030050";
 const LAST_RESORT_TEST_3: &'static str = "000520,000400001,000080900,060000004,070302085,038070,900,050003,007100042";
-//"040080020,600004801,000605400,300,080000342,904200600,060009704,000076"
 
 const UNSOLVABLE_TEST_1: &'static str = "123085400,000034026,006010003,007920,390000062,105473009,072000901,000107040,950342008";
 const UNSOLVABLE_TEST_2: &'static str = "020001084,008600250,005927,050000008,037000400,000304060,070000802,800003100,000210040";
 const UNSOLVABLE_TEST_3: &'static str = "22000382,580002000,305700000,700,500034000,003005002,000000080,60000200,00000001";
 
 const ERROR_TEST_1: &'static str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua";
-const ERROR_TEST_2: &'static str = "";
+const ERROR_TEST_2: &'static str = "408l2003401201501g010600101034&0500610123405";
 const ERROR_TEST_3: &'static str = "";
 
-
+const TEST_BATTERY: [&str; 18] = [  SOLVED_TEST_1,
+                                    SOLVED_TEST_2,
+                                    SOLVED_TEST_3,
+                                    BASIC_TEST_1,
+                                    BASIC_TEST_2,
+                                    BASIC_TEST_3,
+                                    DEEP_SOLVE_TEST_1,
+                                    DEEP_SOLVE_TEST_2,
+                                    DEEP_SOLVE_TEST_3,
+                                    LAST_RESORT_TEST_1,
+                                    LAST_RESORT_TEST_2,
+                                    LAST_RESORT_TEST_3,
+                                    UNSOLVABLE_TEST_1,
+                                    UNSOLVABLE_TEST_2,
+                                    UNSOLVABLE_TEST_3,
+                                    ERROR_TEST_1,
+                                    ERROR_TEST_2,
+                                    ERROR_TEST_3,
+                                    ];
 
 fn main() {
-    let mut curr_board = 
-        Board::from_list(
-        );
-    println!("initial board");
-    curr_board.to_display();
+    println!("beggining tests");
 
-    curr_board.solve();
-    println!("board after solve");
-    curr_board.to_display();
+    for test in TEST_BATTERY.iter(){
+        let mut curr_board = 
+        Board::from_list(
+            String::from(*test)
+        );
+        println!("initial board");
+        curr_board.to_display();
+
+        curr_board.solve();
+        println!("board after solve");
+        curr_board.to_display();
+    }
+    
 }
 
 struct Board
