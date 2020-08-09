@@ -101,6 +101,23 @@ impl Board
         }
         return_board
     }
+    //create a copy of an existing board
+    fn copy_from(to_copy: &mut Board) -> Board
+    {
+        let mut return_board = Board::new();
+        
+        for row in 0..9 {
+            for col in 0..9 {
+                let curr_square = to_copy.at(row, col);
+                match curr_square{
+                    Square::Value(val) => return_board.set(row, col, *val),
+                    Square::Possibilities(_) => {}
+                }
+            }
+        }
+
+        return_board
+    }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
@@ -298,6 +315,55 @@ impl Board
         }
         changed
     }
+    //changes the square with the least possibilities into each of it's possibilities
+    //and attempts to solve.
+    fn last_resort(&mut self) -> bool
+    {
+        println!("beggining last resort check");
+
+        let mut changed = false;
+
+        //determine square with lowest number of possibilities
+        let mut lowest_count = 9;
+        let mut lowest_coords: (usize, usize) = (0, 0);
+        for row in 0..9{
+            for col in 0..9{
+                let curr_square = self.at(row, col);
+                match curr_square{
+                    Square::Possibilities(vals) => {
+                        if vals.len() < lowest_count {
+                            lowest_count = vals.len();
+                            lowest_coords = (row, col);
+                        }
+                    }
+                    Square::Value(_) => {}
+                }
+
+            }
+        }
+
+        //set value
+        match self.at(lowest_coords.0, lowest_coords.1).get_possibilities(){
+            Some(values) => {
+                for val in values.iter() {
+                    println!("copying to new board");
+                    let mut recurse_board = Board::copy_from(self);
+
+                    println!("setting last resort value");
+                    recurse_board.set(lowest_coords.0, lowest_coords.1, *val);
+                    if recurse_board.solve() {
+                        *self = recurse_board;
+                        changed = true;
+                        break;
+                    }
+                }
+            },
+            None => {}
+        }
+
+        println!("finished last resort");
+        changed
+    }
     //checks current board for being solved
     //counts number of each possibility, if all are 9, board is solved
     //returns tuple of (solvable, solved)
@@ -346,20 +412,32 @@ impl Board
     fn solve(&mut self) -> bool
     {
         println!("Solving Sudoku Board");
-        let mut solved = false;
+        let mut board_solved = false;
         let mut board_changed = true;
         let mut loop_count = 0;
         while board_changed
         {
             loop_count += 1;
             println!("loop {}", loop_count);
+
             //solve check
-            if self.solve_check(){
-                solved = true;
-                println!("solved");
-                return solved;
+            let solve_check_result = self.solve_check();
+            let solvable = solve_check_result.0;
+            let solved = solve_check_result.1;
+
+            if !solvable{
+                board_solved = false;
+                println!("board is unsolvable");
+                return board_solved;
             }
+            else if solved{
+                board_solved = true;
+                println!("solved");
+                return board_solved;
+            }
+
             board_changed = false;
+
             //basic solving
             for row in 0..9{
                 for col in 0..9{
@@ -368,16 +446,23 @@ impl Board
                     }
                 }
             }
+
             //deep check
             if !board_changed{
                 if self.deep_check(){
                     board_changed = true;
                 }
-                self.to_display();
             }
+
             //last resort: brute force recursion
+            if !board_changed{
+                self.to_display();
+                if self.last_resort(){
+                    board_changed = true;
+                }
+            }
         }
-        solved
+        board_solved
     }
     //prints possibilities/values for every square
     fn to_string(&mut self)
