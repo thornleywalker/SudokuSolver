@@ -277,10 +277,47 @@ impl Board
     }
     //checks current board for being solved
     //counts number of each possibility, if all are 9, board is solved
-    fn solve_check(&mut self) -> bool
+    //returns tuple of (solvable, solved)
+    fn solve_check(&mut self) -> (bool, bool)
     {
-        let solved = false;
-        solved
+        let mut solved = false;
+        let mut solvable = true;
+
+        //initialize count for each possible value
+        let mut count: HashMap<i32, usize> = HashMap::new();
+
+        //initialize
+        for i in 1..10 { count.insert(i, 0); }
+        
+        let mut solved_vals: HashSet<i32> = HashSet::new();
+
+        for row in 0..9 {
+            for col in 0..9 {
+                match self.at(row, col) {
+                    Square::Value(val) => match count.get_mut(val){
+                        Some(val) => { *val += 1 },
+                        None => {}
+                    },
+                    Square::Possibilities(values) => {
+                        if values.len() == 0 {
+                            //if a square is not yet a value, but has no possibilities,
+                            //the board is not solvable
+                            solvable = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (key, val) in count.iter(){
+            if *val == 9 {
+                solved_vals.insert(*key);
+            }
+        }
+        
+        if solved_vals.len() == 9 { solved = true; }
+
+        (solvable, solved)
     }
     //main solve function
     fn solve(&mut self) -> bool
