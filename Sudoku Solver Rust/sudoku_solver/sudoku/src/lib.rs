@@ -397,7 +397,6 @@ impl Board
 
             //last resort: brute force recursion
             if !board_changed{
-                self.to_display();
                 if self.last_resort(){
                     board_changed = true;
                 }
@@ -604,26 +603,6 @@ impl Square
         match self
         {
             Square::Possibilities(values) => Some(values.clone()),
-            Square::Value(_val) => None
-        }
-    }
-    //checks if Square has a single possibility
-    //returns true and the value if only one possibility
-    //returns false and None if Square is Value
-    fn single_possibility_check(&mut self) -> Option<i32>
-    {
-        match self
-        {
-            Square::Possibilities(values) => 
-            {
-                if values.len() == 1
-                {
-                    let mut new_val = 0;
-                    for val in values.iter() { new_val = *val; }
-                    Some(new_val)
-                }
-                else {None}
-            }
             Square::Value(_val) => None
         }
     }
