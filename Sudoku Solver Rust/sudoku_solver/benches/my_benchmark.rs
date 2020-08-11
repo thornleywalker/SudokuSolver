@@ -6,103 +6,15 @@ use std::path::Path;
 use sudoku;
 
 
-fn easy_speed_tests()
+fn speed_tests(puzzles:&Vec<String>)
 {
-
-    let mut puzz_count = 0;
-    let mut solved_count = 0;
-
-    // for puzzle in puzzles_list{
-    //     puzz_count += 1;
-    //     let mut curr_board = 
-    //         sudoku::Board::from_list(
-    //             String::from(puzzle)
-    //         );
-            
-    //     if curr_board.solve() {solved_count += 1;}
-    // }
-    println!("solved {} of {}", solved_count, puzz_count);
-}
-
-fn medium_speed_tests()
-{
-    let mut puzzles_list: Vec<String> = Vec::new();
-    
-    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/medium.txt"){
-        for line in lines{
-            if let Ok(puzzle) = line{
-                puzzles_list.push(puzzle);
-            }
-        }
-    }
-
-    let mut puzz_count = 0;
-    let mut solved_count = 0;
-
-    for puzzle in puzzles_list{
-        puzz_count += 1;
+    for puzzle in puzzles{
         let mut curr_board = 
             sudoku::Board::from_list(
                 String::from(puzzle)
             );
-            
-        if curr_board.solve() {solved_count += 1;}
+        curr_board.solve();
     }
-    println!("solved {} of {}", solved_count, puzz_count);
-}
-
-fn hard_speed_tests()
-{
-    let mut puzzles_list: Vec<String> = Vec::new();
-    
-    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/hard.txt"){
-        for line in lines{
-            if let Ok(puzzle) = line{
-                puzzles_list.push(puzzle);
-            }
-        }
-    }
-
-    let mut puzz_count = 0;
-    let mut solved_count = 0;
-
-    for puzzle in puzzles_list{
-        puzz_count += 1;
-        let mut curr_board = 
-            sudoku::Board::from_list(
-                String::from(puzzle)
-            );
-            
-        if curr_board.solve() {solved_count += 1;}
-    }
-    println!("solved {} of {}", solved_count, puzz_count);
-}
-
-fn expert_speed_tests()
-{
-    let mut puzzles_list: Vec<String> = Vec::new();
-    
-    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/expert.txt"){
-        for line in lines{
-            if let Ok(puzzle) = line{
-                puzzles_list.push(puzzle);
-            }
-        }
-    }
-
-    let mut puzz_count = 0;
-    let mut solved_count = 0;
-
-    for puzzle in puzzles_list{
-        puzz_count += 1;
-        let mut curr_board = 
-            sudoku::Board::from_list(
-                String::from(puzzle)
-            );
-            
-        if curr_board.solve() {solved_count += 1;}
-    }
-    println!("solved {} of {}", solved_count, puzz_count);
 }
 
 // The output is wrapped in a Result to allow matching on errors
@@ -114,18 +26,55 @@ where P: AsRef<Path>, {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut puzzles_list: Vec<String> = Vec::new();
+    let mut easy_puzzles_list: Vec<String> = Vec::new();
     if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/easy.txt"){
         for line in lines{
             if let Ok(puzzle) = line{
-                puzzles_list.push(puzzle);
+                easy_puzzles_list.push(puzzle);
             }
         }
     }
+
+    let mut medium_puzzles_list: Vec<String> = Vec::new();
+    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/medium.txt"){
+        for line in lines{
+            if let Ok(puzzle) = line{
+                medium_puzzles_list.push(puzzle);
+            }
+        }
+    }
+
+    let mut hard_puzzles_list: Vec<String> = Vec::new();
+    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/hard.txt"){
+        for line in lines{
+            if let Ok(puzzle) = line{
+                hard_puzzles_list.push(puzzle);
+            }
+        }
+    }
+
+    let mut expert_puzzles_list: Vec<String> = Vec::new();
+    if let Ok(lines) = read_lines("../../puzzle_generator/puzzles/expert.txt"){
+        for line in lines{
+            if let Ok(puzzle) = line{
+                expert_puzzles_list.push(puzzle);
+            }
+        }
+    }
+
+    
     c.bench_function("easy tests", |b| b.iter(||
-         for puzzle in puzzles_list{
-             easy_speed_tests()
-         }
+             speed_tests(black_box(&easy_puzzles_list))
+        ));
+    c.bench_function("medium tests", |b| b.iter(||
+             speed_tests(black_box(&medium_puzzles_list))
+        ));
+    c.bench_function("hard tests", |b| b.iter(||
+             speed_tests(black_box(&hard_puzzles_list))
+        ));
+
+    c.bench_function("expert tests", |b| b.iter(||
+             speed_tests(black_box(&expert_puzzles_list))
         ));
 }
 
