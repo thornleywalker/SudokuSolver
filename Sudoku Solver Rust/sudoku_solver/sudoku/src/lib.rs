@@ -1,5 +1,7 @@
 use std::{char, collections::{HashSet, HashMap}};
-pub mod generate;
+pub mod tests;
+
+const DEBUG_PRINTOUT: bool = false;
 
 pub struct Board
 {
@@ -72,7 +74,7 @@ impl Board
     //removes val from all Squares in row, column, and Box
     fn set(&mut self, row:usize, col:usize, val:i32)
     {
-        println!["setting {},{} to {}", row+1, col+1, val];
+        if DEBUG_PRINTOUT { println!["setting {},{} to {}", row+1, col+1, val];}
         self.at(row, col).set(val);
         //remove val from possibilities in the same column
         for _row in 0..9
@@ -157,7 +159,7 @@ impl Board
     //returns true if board changed, false otherwise
     fn deep_check(&mut self) -> bool
     {
-        println!("running deep check");
+        if DEBUG_PRINTOUT { println!("running deep check"); }
         let mut changed = false;
         let mut deep_rows: HashMap<i32, HashMap<i32, i32>> = HashMap::new();
         let mut deep_cols: HashMap<i32, HashMap<i32, i32>> = HashMap::new();
@@ -232,7 +234,7 @@ impl Board
             for col in update_cols {
                 if self.at(row as usize, col as usize).remove(poss) {
                     changed = true;
-                    println!("deep check did something on rows");
+                    if DEBUG_PRINTOUT { println!("deep check did something on rows");}
                 }
             }
         }
@@ -248,7 +250,7 @@ impl Board
             for row in update_rows {
                 if self.at(row as usize, col as usize).remove(poss) {
                     changed = true;
-                    println!("deep check did something on cols");
+                    if DEBUG_PRINTOUT { println!("deep check did something on cols");}
                 }
             }
         }
@@ -258,7 +260,7 @@ impl Board
     //and attempts to solve.
     fn last_resort(&mut self) -> bool
     {
-        println!("beggining last resort check");
+        if DEBUG_PRINTOUT { println!("beggining last resort check");}
 
         let mut changed = false;
 
@@ -285,10 +287,10 @@ impl Board
         match self.at(lowest_coords.0, lowest_coords.1).get_possibilities(){
             Some(values) => {
                 for val in values.iter() {
-                    println!("copying to new board");
+                    if DEBUG_PRINTOUT{println!("copying to new board");}
                     let mut recurse_board = Board::copy_from(self);
 
-                    println!("setting last resort value");
+                    if DEBUG_PRINTOUT{println!("setting last resort value");}
                     recurse_board.set(lowest_coords.0, lowest_coords.1, *val);
                     if recurse_board.solve() {
                         *self = recurse_board;
@@ -300,7 +302,7 @@ impl Board
             None => {}
         }
 
-        println!("finished last resort");
+        if DEBUG_PRINTOUT{println!("finished last resort");}
         changed
     }
     //checks current board for being solved
@@ -350,14 +352,14 @@ impl Board
     //main solve function
     pub fn solve(&mut self) -> bool
     {
-        println!("Solving Sudoku Board");
+        if DEBUG_PRINTOUT { println!("Solving Sudoku Board");}
         let mut board_solved = false;
         let mut board_changed = true;
         let mut loop_count = 0;
         while board_changed
         {
             loop_count += 1;
-            println!("loop {}", loop_count);
+            if DEBUG_PRINTOUT{println!("loop {}", loop_count);}
 
             //solve check
             let solve_check_result = self.solve_check();
@@ -366,12 +368,12 @@ impl Board
 
             if !solvable{
                 board_solved = false;
-                println!("board is unsolvable");
+                if DEBUG_PRINTOUT { println!("board is unsolvable");}
                 return board_solved;
             }
             else if solved{
                 board_solved = true;
-                println!("solved");
+                if DEBUG_PRINTOUT { println!("solved");}
                 return board_solved;
             }
 
