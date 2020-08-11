@@ -1,5 +1,9 @@
 mod sudoku;
 
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
+
 const SOLVED_TEST_1: &'static str = "827154396,965327148,341689752,593468271,472513689,618972435,786235914,154796823,239841567";
 const SOLVED_TEST_2: &'static str = "";
 const SOLVED_TEST_3: &'static str = "";
@@ -46,13 +50,6 @@ const TEST_BATTERY: [&str; 18] = [  SOLVED_TEST_1,
 
 fn main() {
 
-    let diff = sudoku::generate::Difficulty::Easy;
-
-    let board = sudoku::generate::generate_board(diff);
-
-    println!("hopefully did a thing");
-
-
     // println!("beggining tests");
 
     // for test in TEST_BATTERY.iter(){
@@ -67,5 +64,35 @@ fn main() {
     //     println!("board after solve");
     //     curr_board.to_display();
     // }
+
+    //let easy_file = File::open("puzzles/easy.txt");
+    //easy_file
+    if let Ok(lines) = read_lines("/puzzles/easy.txt"){
+        for line in lines{
+            if let Ok(puzzle) = line{
+                println!("{}", puzzle);
+            }
+        }
+    }
+
+    // let mut curr_board = 
+    //     sudoku::Board::from_list(
+    //         String::from("058030020,402000905,007000680,290054070,500062000,003810250,109003064,865490130,070006000,")
+    //     );
+    //     println!("initial board");
+    //     curr_board.to_display();
+
+    //     curr_board.solve();
+    //     println!("board after solve");
+    //     curr_board.to_display();
     
+}
+
+
+// The output is wrapped in a Result to allow matching on errors
+// Returns an Iterator to the Reader of the lines of the file.
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
 }
