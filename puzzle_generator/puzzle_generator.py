@@ -28,11 +28,6 @@ class SudokuGenerator:
     }
 
     #headless browser setup
-    opts = Options()
-    opts.set_headless()
-    assert opts.headless
-    browser = Firefox(options=opts)
-
     def __init__(self):
         self.opts = Options()
         self.opts.set_headless()
@@ -85,48 +80,38 @@ def main():
     hard_gen = SudokuGenerator()
     expert_gen = SudokuGenerator()
 
-    easy_thread = threading.Thread(
-        target=easy_gen.generate,
-        args=('easy', 5),
-        )
-
-    medium_thread = threading.Thread(
-        target=medium_gen.generate,
-        args=('medium', 5),
-        )
-
-    hard_thread = threading.Thread(
-        target=hard_gen.generate,
-        args=('hard', 5),
-        )
-    expert_thread = threading.Thread(
-        target=expert_gen.generate,
-        args=('expert', 5),
-        )
-
-    easy_thread.start()
-    medium_thread.start()
-    hard_thread.start()
-    expert_thread.start()
+    num = 2
 
     for i in range(5):
+        easy_thread = threading.Thread(
+        target=easy_gen.generate,
+        args=('easy', num),
+        )
+
+        medium_thread = threading.Thread(
+            target=medium_gen.generate,
+            args=('medium', num),
+            )
+
+        hard_thread = threading.Thread(
+            target=hard_gen.generate,
+            args=('hard', num),
+            )
+        expert_thread = threading.Thread(
+            target=expert_gen.generate,
+            args=('expert', num),
+            )
+
+        easy_thread.start()
+        medium_thread.start()
+        hard_thread.start()
+        expert_thread.start()
         easy_thread.join()
         medium_thread.join()
         hard_thread.join()
         expert_thread.join()
 
         print("{}th iteration".format(i))
-
-        print('running threads')
-        easy_thread.start()
-        medium_thread.start()
-        hard_thread.start()
-        expert_thread.start()
-
-    easy_thread.join()
-    medium_thread.join()
-    hard_thread.join()
-    expert_thread.join()
     
     print('threads complete')
     easy_gen.end()
