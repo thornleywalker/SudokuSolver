@@ -80,9 +80,9 @@ def main():
     hard_gen = SudokuGenerator()
     expert_gen = SudokuGenerator()
 
-    num = 2
+    num = 5
 
-    for i in range(5):
+    for i in range(100):
         easy_thread = threading.Thread(
         target=easy_gen.generate,
         args=('easy', num),
