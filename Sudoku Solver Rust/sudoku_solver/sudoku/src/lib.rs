@@ -1,20 +1,25 @@
-use std::{char, collections::{HashSet, HashMap}};
+use std::{
+    char, 
+    collections::{HashSet, HashMap}, 
+    thread, 
+    sync::{Arc, Mutex, mpsc}
+};
 pub mod tests;
 
-const DEBUG_PRINTOUT: bool = false;
+const DEBUG_PRINTOUT: bool = true;
 
 pub struct Board
 {
-    boxes: Vec<Vec<Box>>
+    Blocks: Vec<Vec<Block>>
 }
 impl Board
 {
-    //initialize a 3x3 array of Boxes
+    //initialize a 3x3 array of Blockes
     pub fn new() -> Board
     {
-        Board{boxes:vec![vec![Box::new(), Box::new(), Box::new()],
-                        vec![Box::new(), Box::new(), Box::new()],
-                        vec![Box::new(), Box::new(), Box::new()]]}
+        Board{Blocks:vec![vec![Block::new(), Block::new(), Block::new()],
+                        vec![Block::new(), Block::new(), Block::new()],
+                        vec![Block::new(), Block::new(), Block::new()]]}
     }
     //create a board from a string of numbers
     pub fn from_list(in_string: String) -> Board
@@ -59,19 +64,25 @@ impl Board
 
         return_board
     }
+    fn empty() -> Board
+    {
+        Board{Blocks:vec![vec![Block::empty(), Block::empty(), Block::empty()],
+                        vec![Block::empty(), Block::empty(), Block::empty()],
+                        vec![Block::empty(), Block::empty(), Block::empty()]]}
+    }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
-        let box_row = row / 3;
-        let box_col = col / 3;
+        let block_row = row / 3;
+        let block_col = col / 3;
 
         let square_row = row % 3;
         let square_col = col % 3;
 
-        self.boxes[box_row][box_col].at(square_row, square_col)
+        self.Blocks[block_row][block_col].at(square_row, square_col)
     }
     //changes the Square at row, col to the val,
-    //removes val from all Squares in row, column, and Box
+    //removes val from all Squares in row, column, and Block
     fn set(&mut self, row:usize, col:usize, val:i32)
     {
         if DEBUG_PRINTOUT { println!["setting {},{} to {}", row+1, col+1, val];}
@@ -86,17 +97,17 @@ impl Board
         {
             self.at(row, _col).remove(val);
         }
-        //remove val from possibilities in the same Box
-        let box_row = row / 3;
-        let box_col = col / 3;
-        self.boxes[box_row][box_col].remove(val);
+        //remove val from possibilities in the same Block
+        let block_row = row / 3;
+        let block_col = col / 3;
+        self.Blocks[block_row][block_col].remove(val);
     }
     //checks the given square for the following
     // - it only has one possibility
     // - for each possibility in the Square:
     //      - it is the only one of that possibility in the row
     //      - it is the only one of that possibility in the column
-    //      - it is the only one of that possibility in the Box
+    //      - it is the only one of that possibility in the Block
     //if something changes, returns true,
     //otherwise returns false
     fn check_square(&mut self, row:usize, col:usize) -> bool
@@ -122,7 +133,7 @@ impl Board
                     {
                         let mut row_unique = true;
                         let mut col_unique = true;
-                        let mut box_unique = true;
+                        let mut block_unique = true;
                         //check for possibility uniqueness in row
                         for _col in 0..9 {
                             if col != _col{
@@ -135,12 +146,12 @@ impl Board
                                 if self.at(_row, col).contains(*val) { col_unique = false; break; }
                             }
                         }
-                        //check for possibility uniqueness in Box
-                        let box_row = row / 3;
-                        let box_col = col / 3;
-                        if self.boxes[box_row][box_col].contains(*val) { box_unique = false; }
+                        //check for possibility uniqueness in Block
+                        let block_row = row / 3;
+                        let block_col = col / 3;
+                        if self.Blocks[block_row][block_col].contains(*val) { block_unique = false; }
 
-                        if row_unique || col_unique || box_unique
+                        if row_unique || col_unique || block_unique
                         {
                             self.set(row, col, *val);
                             changed = true;
@@ -154,8 +165,8 @@ impl Board
         changed
     }
     //performs a deep check:
-    // - if a possibility can only be in one row/column of a Box,
-    //   removes that possibility from that row/column in adjacent Boxes
+    // - if a possibility can only be in one row/column of a Block,
+    //   removes that possibility from that row/column in adjacent Blockes
     //returns true if board changed, false otherwise
     fn deep_check(&mut self) -> bool
     {
@@ -166,35 +177,35 @@ impl Board
 
         let row_string = 7;
         let col_string = 8;
-        let box_col_string = 9;
-        let box_row_string = 10;
+        let block_col_string = 9;
+        let block_row_string = 10;
         //get values and rows/cols
-        for box_row in 0..3
+        for block_row in 0..3
         {
-            for box_col in 0..3
+            for block_col in 0..3
             {
-                let curr_box = &mut self.boxes[box_row][box_col];
+                let curr_Block = &mut self.Blocks[block_row][block_col];
                 let mut temp_rows = HashMap::new();
                 let mut temp_cols = HashMap::new();
-                for (key, val) in curr_box.deep_row_check() {
-                    temp_rows.insert(key, val + 3*(box_row as i32));
+                for (key, val) in curr_Block.deep_row_check() {
+                    temp_rows.insert(key, val + 3*(block_row as i32));
                 }
-                for (key, val) in curr_box.deep_col_check() {
-                    temp_cols.insert(key, val + 3*(box_col as i32));
+                for (key, val) in curr_Block.deep_col_check() {
+                    temp_cols.insert(key, val + 3*(block_col as i32));
                 }
                 
                 for (key, row) in temp_rows {
                     match deep_rows.get_mut(&key) {
                         Some(map) => {
                             map.insert(row_string, row);
-                            map.insert(box_col_string, box_col as i32);
+                            map.insert(block_col_string, block_col as i32);
                         },
                         None => {
                             deep_rows.insert(key, HashMap::new());
                             match deep_rows.get_mut(&key) {
                                 Some(map) => {
                                     map.insert(row_string, row);
-                                    map.insert(box_col_string, box_col as i32);
+                                    map.insert(block_col_string, block_col as i32);
                                 },
                                 None => {}
                             }
@@ -205,14 +216,14 @@ impl Board
                     match deep_cols.get_mut(&key) {
                         Some(map) => {
                             map.insert(col_string, col);
-                            map.insert(box_row_string, box_row as i32);
+                            map.insert(block_row_string, block_row as i32);
                         },
                         None => {
                             deep_cols.insert(key, HashMap::new());
                             match deep_cols.get_mut(&key) {
                                 Some(map) => {
                                     map.insert(col_string, col);
-                                    map.insert(box_row_string, box_row as i32);
+                                    map.insert(block_row_string, block_row as i32);
                                 },
                                 None => {}
                             }
@@ -228,9 +239,9 @@ impl Board
                 None => {9}
             };
             let mut update_cols: HashSet<_> = [0,1,2,3,4,5,6,7,8].iter().cloned().collect();
-            update_cols.remove(&(map[&box_col_string]*3+0));
-            update_cols.remove(&(map[&box_col_string]*3+1));
-            update_cols.remove(&(map[&box_col_string]*3+2));
+            update_cols.remove(&(map[&block_col_string]*3+0));
+            update_cols.remove(&(map[&block_col_string]*3+1));
+            update_cols.remove(&(map[&block_col_string]*3+2));
             for col in update_cols {
                 if self.at(row as usize, col as usize).remove(poss) {
                     changed = true;
@@ -244,9 +255,9 @@ impl Board
                 None => {9}
             };
             let mut update_rows: HashSet<_> = [0,1,2,3,4,5,6,7,8].iter().cloned().collect();
-            update_rows.remove(&(map[&box_row_string]*3+0));
-            update_rows.remove(&(map[&box_row_string]*3+1));
-            update_rows.remove(&(map[&box_row_string]*3+2));
+            update_rows.remove(&(map[&block_row_string]*3+0));
+            update_rows.remove(&(map[&block_row_string]*3+1));
+            update_rows.remove(&(map[&block_row_string]*3+2));
             for row in update_rows {
                 if self.at(row as usize, col as usize).remove(poss) {
                     changed = true;
@@ -260,9 +271,9 @@ impl Board
     //and attempts to solve.
     fn last_resort(&mut self) -> bool
     {
-        if DEBUG_PRINTOUT { println!("beggining last resort check");}
+        if DEBUG_PRINTOUT { println!("beggining last resort check"); }
 
-        let mut changed = false;
+        let mut changed =false;
 
         //determine square with lowest number of possibilities
         let mut lowest_count = 9;
@@ -279,7 +290,6 @@ impl Board
                     }
                     Square::Value(_) => {}
                 }
-
             }
         }
 
@@ -373,7 +383,7 @@ impl Board
             }
             else if solved{
                 board_solved = true;
-                if DEBUG_PRINTOUT { println!("solved");}
+                if DEBUG_PRINTOUT { println!("------------------SOLVED---------------");}
                 return board_solved;
             }
 
@@ -437,18 +447,24 @@ impl Board
 
 }
 
-struct Box
+struct Block
 {
     squares: Vec<Vec<Square>>
 }
-impl Box
+impl Block
 {
     //newializes a 3x3 array of Squares with all possibilities in all Squares
-    fn new() -> Box
+    fn new() -> Block
     {
-        Box{squares:vec![vec![Square::new(),Square::new(),Square::new()],
+        Block{squares:vec![vec![Square::new(),Square::new(),Square::new()],
                         vec![Square::new(),Square::new(),Square::new()],
                         vec![Square::new(),Square::new(),Square::new()]]}
+    }
+    fn empty() -> Block
+    {
+        Block{squares:vec![vec![Square::empty(),Square::empty(),Square::empty()],
+                        vec![Square::empty(),Square::empty(),Square::empty()],
+                        vec![Square::empty(),Square::empty(),Square::empty()]]}
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
@@ -471,7 +487,7 @@ impl Box
             }
         }
     }
-    //checks each Square in the Box if it contains the given value
+    //checks each Square in the Block if it contains the given value
     fn contains(&mut self, val:i32) -> bool
     {
         let mut contains = false;
@@ -571,6 +587,10 @@ impl Square
         let new_set: HashSet<i32> = 
             [1, 2, 3, 4, 5, 6, 7, 8, 9].iter().cloned().collect();
         Square::Possibilities(new_set)
+    }
+    fn empty() -> Square
+    {
+        Square::Value(0)
     }
     //sets Square to Value with val
     fn set(&mut self, val:i32)
