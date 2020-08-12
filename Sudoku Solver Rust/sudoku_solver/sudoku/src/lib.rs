@@ -55,20 +55,14 @@ impl Board
         for row in 0..9 {
             for col in 0..9 {
                 let curr_square = to_copy.at(row, col);
-                match curr_square{
-                    Square::Value(val) => return_board.set(row, col, *val),
-                    Square::Possibilities(_) => {}
+                match curr_square.val(){
+                    Some(val) => return_board.set(row, col, val),
+                    None => {}
                 }
             }
         }
 
         return_board
-    }
-    fn empty() -> Board
-    {
-        Board{Blocks:vec![vec![Block::empty(), Block::empty(), Block::empty()],
-                        vec![Block::empty(), Block::empty(), Block::empty()],
-                        vec![Block::empty(), Block::empty(), Block::empty()]]}
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
@@ -161,6 +155,18 @@ impl Board
                 }
             }
             None => { }
+        }
+        changed
+    }
+    fn basic_solving(&mut self) -> bool
+    {
+        let mut changed = false;
+        for row in 0..9{
+            for col in 0..9{
+                if self.check_square(row, col){
+                    changed = true;
+                }
+            }
         }
         changed
     }
@@ -281,14 +287,12 @@ impl Board
         for row in 0..9{
             for col in 0..9{
                 let curr_square = self.at(row, col);
-                match curr_square{
-                    Square::Possibilities(vals) => {
-                        if vals.len() < lowest_count {
-                            lowest_count = vals.len();
-                            lowest_coords = (row, col);
-                        }
-                    }
-                    Square::Value(_) => {}
+                match curr_square.get_possibilities(){
+                    Some(vals) => if vals.len() < lowest_count {
+                        lowest_count = vals.len();
+                        lowest_coords = (row, col);
+                    },
+                    None => {}
                 }
             }
         }
@@ -333,18 +337,20 @@ impl Board
 
         for row in 0..9 {
             for col in 0..9 {
-                match self.at(row, col) {
-                    Square::Value(val) => match count.get_mut(val){
+                match self.at(row, col).val(){
+                    Some(val) => match count.get_mut(&val){
                         Some(val) => { *val += 1 },
                         None => {}
                     },
-                    Square::Possibilities(values) => {
-                        if values.len() == 0 {
-                            //if a square is not yet a value, but has no possibilities,
-                            //the board is not solvable
-                            solvable = false;
-                        }
-                    }
+                    None => {}
+                }
+                match self.at(row, col).get_possibilities(){
+                    Some(values) => if values.len() == 0 {
+                        //if a square is not yet a value, but has no possibilities,
+                        //the board is not solvable
+                        solvable = false;
+                    },
+                    None => {}
                 }
             }
         }
@@ -388,14 +394,9 @@ impl Board
             }
 
             board_changed = false;
-
             //basic solving
-            for row in 0..9{
-                for col in 0..9{
-                    if self.check_square(row, col){
-                        board_changed = true;
-                    }
-                }
+            if self.basic_solving(){
+                board_changed = true;
             }
 
             //deep check
@@ -430,15 +431,17 @@ impl Board
         for row in 0..9{
             let mut display_string = String::new();
             for col in 0..9{
-                display_string.push( match self.at(row, col){
-                    Square::Possibilities(_) => {'_'}
-                    Square::Value(val) => {
-                        match char::from_digit(*val as u32, 10){
-                            Some(val) => val,
-                            None =>{'x'}
+                display_string.push(
+                    match *self.at(row, col)._internal.lock().unwrap(){
+                        _Square::Possibilities(_) => {'_'}
+                        _Square::Value(val) => {
+                            match char::from_digit(val as u32, 10){
+                                Some(val) => val,
+                                None =>{'x'}
+                            }
                         }
                     }
-                });
+                );
                 display_string.push(' ');
             }
             println!("{}", display_string);
@@ -459,12 +462,6 @@ impl Block
         Block{squares:vec![vec![Square::new(),Square::new(),Square::new()],
                         vec![Square::new(),Square::new(),Square::new()],
                         vec![Square::new(),Square::new(),Square::new()]]}
-    }
-    fn empty() -> Block
-    {
-        Block{squares:vec![vec![Square::empty(),Square::empty(),Square::empty()],
-                        vec![Square::empty(),Square::empty(),Square::empty()],
-                        vec![Square::empty(),Square::empty(),Square::empty()]]}
     }
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
@@ -510,16 +507,16 @@ impl Block
         //get which rows each possibility can be in
         for square_row in 0..3 {
             for square_col in 0..3 {
-                match &self.squares[square_row][square_col] {
-                    Square::Possibilities(values) => {
+                match &self.squares[square_row][square_col].get_possibilities() {
+                    Some(values) => {
                         for val in values.iter() {
                             match possibility_rows.get_mut(&val) {
                                 Some(set) => { set.insert(square_row); },
                                 None => {}
                             }
                         }
-                    },
-                    Square::Value(_) => {}
+                    }
+                    None => {}
                 }
             }
         }
@@ -547,16 +544,16 @@ impl Block
         //get which cols each possibility can be in
         for square_row in 0..3 {
             for square_col in 0..3 {
-                match &self.squares[square_row][square_col] {
-                    Square::Possibilities(values) => {
+                match &self.squares[square_row][square_col].get_possibilities() {
+                    Some(values) => {
                         for val in values.iter() {
                             match possibility_cols.get_mut(&val) {
                                 Some(set) => { set.insert(square_col); },
                                 None => {}
                             }
                         }
-                    },
-                    Square::Value(_) => {}
+                    }
+                    None => {}
                 }
             }
         }
@@ -573,12 +570,16 @@ impl Block
         return_map
     }
 }
-
-enum Square
+enum _Square
 {
     Possibilities(HashSet<i32>),
     Value(i32)
 }
+struct Square
+{
+    _internal: Arc<Mutex<_Square>>
+}
+
 impl Square
 {
     //creates a Square with all possibilities
@@ -586,25 +587,28 @@ impl Square
     {
         let new_set: HashSet<i32> = 
             [1, 2, 3, 4, 5, 6, 7, 8, 9].iter().cloned().collect();
-        Square::Possibilities(new_set)
-    }
-    fn empty() -> Square
-    {
-        Square::Value(0)
+        Square{_internal:Arc::new(Mutex::new(_Square::Possibilities(new_set)))}
     }
     //sets Square to Value with val
     fn set(&mut self, val:i32)
     {
-        *self = Square::Value(val);
+        *self._internal.lock().unwrap() = _Square::Value(val);
+    }
+    fn val(&mut self) -> Option<i32>
+    {
+        match *self._internal.lock().unwrap(){
+            _Square::Value(val) => Some(val),
+            _Square::Possibilities(_) => None
+        }
     }
     //returns true if val is in set of possibilities, false if not
     //returns false if Square is Value
     fn contains(&self, val:i32) -> bool
     {
-        match self
+        match &*self._internal.lock().unwrap()
         {
-            Square::Possibilities(values) => values.contains(&val),
-            Square::Value(_val) => false
+            _Square::Possibilities(values) => values.contains(&val),
+            _Square::Value(_val) => false
         }
     }
     //removes val from set of possibilities
@@ -612,32 +616,32 @@ impl Square
     //returns false if Square is Value
     fn remove(&mut self, val:i32) -> bool
     {
-        match self
+        match &mut *self._internal.lock().unwrap()
         {
-            Square::Possibilities(values) => {values.remove(&val)},
-            Square::Value(_val) => false
+            _Square::Possibilities(values) => {values.remove(&val)},
+            _Square::Value(_val) => false
         }
     }
     fn get_possibilities(&self) -> Option<HashSet<i32>>
     {
-        match self
+        match &*self._internal.lock().unwrap()
         {
-            Square::Possibilities(values) => Some(values.clone()),
-            Square::Value(_val) => None
+            _Square::Possibilities(values) => Some(values.clone()),
+            _Square::Value(_val) => None
         }
     }
     fn to_string(&self) -> String
     {
         let mut return_string = String::new();
-        match self
+        match &*self._internal.lock().unwrap()
         {
-            Square::Possibilities(values) => 
+            _Square::Possibilities(values) => 
             {
                 return_string += "( ";
                 for val in values { return_string += &format!("{}, ", val); }
                 return_string += ")";
             },
-            Square::Value(val) =>
+            _Square::Value(val) =>
             {
                 return_string += &format!("{}", val)
             }
