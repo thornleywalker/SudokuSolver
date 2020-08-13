@@ -64,12 +64,7 @@ impl Board
 
         return_board
     }
-    fn empty() -> Board
-    {
-        Board{Blocks:vec![vec![Block::empty(), Block::empty(), Block::empty()],
-                        vec![Block::empty(), Block::empty(), Block::empty()],
-                        vec![Block::empty(), Block::empty(), Block::empty()]]}
-    }
+
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
@@ -161,6 +156,18 @@ impl Board
                 }
             }
             None => { }
+        }
+        changed
+    }
+    fn basic_check(&mut self) -> bool
+    {
+        let mut changed = false;
+        for row in 0..9{
+            for col in 0..9{
+                if self.check_square(row, col){
+                    changed = true;
+                }
+            }
         }
         changed
     }
@@ -390,12 +397,8 @@ impl Board
             board_changed = false;
 
             //basic solving
-            for row in 0..9{
-                for col in 0..9{
-                    if self.check_square(row, col){
-                        board_changed = true;
-                    }
-                }
+            if self.basic_check(){
+                board_changed = true;
             }
 
             //deep check
@@ -460,12 +463,7 @@ impl Block
                         vec![Square::new(),Square::new(),Square::new()],
                         vec![Square::new(),Square::new(),Square::new()]]}
     }
-    fn empty() -> Block
-    {
-        Block{squares:vec![vec![Square::empty(),Square::empty(),Square::empty()],
-                        vec![Square::empty(),Square::empty(),Square::empty()],
-                        vec![Square::empty(),Square::empty(),Square::empty()]]}
-    }
+
     //returns a mutable reference to the Square at row, col
     fn at(&mut self, row:usize, col:usize) -> &mut Square
     {
@@ -587,10 +585,6 @@ impl Square
         let new_set: HashSet<i32> = 
             [1, 2, 3, 4, 5, 6, 7, 8, 9].iter().cloned().collect();
         Square::Possibilities(new_set)
-    }
-    fn empty() -> Square
-    {
-        Square::Value(0)
     }
     //sets Square to Value with val
     fn set(&mut self, val:i32)
