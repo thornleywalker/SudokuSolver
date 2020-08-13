@@ -66,7 +66,17 @@ impl Board
     }
 
     //returns a mutable reference to the Square at row, col
-    fn at(&mut self, row:usize, col:usize) -> &mut Square
+    fn at_mut(&mut self, row:usize, col:usize) -> &mut Square
+    {
+        let block_row = row / 3;
+        let block_col = col / 3;
+
+        let square_row = row % 3;
+        let square_col = col % 3;
+
+        self.Blocks[block_row][block_col].at_mut(square_row, square_col)
+    }
+    fn at(&self, row:usize, col:usize) -> &Square
     {
         let block_row = row / 3;
         let block_col = col / 3;
@@ -81,16 +91,16 @@ impl Board
     fn set(&mut self, row:usize, col:usize, val:i32)
     {
         if DEBUG_PRINTOUT { println!["setting {},{} to {}", row+1, col+1, val];}
-        self.at(row, col).set(val);
+        self.at_mut(row, col).set(val);
         //remove val from possibilities in the same column
         for _row in 0..9
         {
-            self.at(_row, col).remove(val);
+            self.at_mut(_row, col).remove(val);
         }
         //remove val from possibilities in the same row
         for _col in 0..9
         {
-            self.at(row, _col).remove(val);
+            self.at_mut(row, _col).remove(val);
         }
         //remove val from possibilities in the same Block
         let block_row = row / 3;
@@ -108,7 +118,7 @@ impl Board
     fn check_square(&mut self, row:usize, col:usize) -> bool
     {
         let mut changed = false;
-
+        let mut board = Arc::new(Mutex::new(Board::copy_from(self)));
         match self.at(row, col).get_possibilities()
         {
             Some(values) =>
@@ -126,25 +136,33 @@ impl Board
                 {
                     for val in values.iter()
                     {
+                        
                         let mut row_unique = true;
                         let mut col_unique = true;
                         let mut block_unique = true;
                         //check for possibility uniqueness in row
                         for _col in 0..9 {
-                            if col != _col{
-                                if self.at(row, _col).contains(*val) { row_unique = false; break; }
+                            if col != _col {
+                                //let _board = Arc::clone(&board);
+                                if self.at(row, _col).contains(*val) {
+                                    row_unique = false; break;
+                                }
                             }
                         }
                         //check for possibility uniqueness in column
                         for _row in 0..9 {
-                            if row != _row{
-                                if self.at(_row, col).contains(*val) { col_unique = false; break; }
+                            if row != _row {
+                                if self.at(_row, col).contains(*val) {
+                                    col_unique = false; break;
+                                }
                             }
                         }
                         //check for possibility uniqueness in Block
                         let block_row = row / 3;
                         let block_col = col / 3;
-                        if self.Blocks[block_row][block_col].contains(*val) { block_unique = false; }
+                        if self.Blocks[block_row][block_col].contains(*val) {
+                            block_unique = false;
+                        }
 
                         if row_unique || col_unique || block_unique
                         {
@@ -159,17 +177,39 @@ impl Board
         }
         changed
     }
+    //does basic checking for every square
+    //returns tru if board changed, false otherwise
     fn basic_check(&mut self) -> bool
     {
-        let mut changed = false;
+        /*
+        goal: run all square checks in parallel
+        */
+        let board = Arc::new(Mutex::new(Board::copy_from(self)));
+        let mut handles = vec![];
+        let changed = Arc::new(Mutex::new(false));
         for row in 0..9{
             for col in 0..9{
-                if self.check_square(row, col){
-                    changed = true;
-                }
+                let _changed = Arc::clone(&changed);
+                let _board = Arc::clone(&board);
+                let handle = thread::spawn(move || {
+                    if _board.lock().unwrap().check_square(row, col){
+                        let mut val = _changed.lock().unwrap();
+                        *val = true;
+                    }
+                });
+                handles.push(handle);
             }
         }
-        changed
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        let changed_ret = *changed.lock().unwrap();
+        if changed_ret {
+            *self = Board::copy_from(&mut *board.lock().unwrap());
+        }
+        changed_ret
     }
     //performs a deep check:
     // - if a possibility can only be in one row/column of a Block,
@@ -191,13 +231,13 @@ impl Board
         {
             for block_col in 0..3
             {
-                let curr_Block = &mut self.Blocks[block_row][block_col];
+                let curr_block = &mut self.Blocks[block_row][block_col];
                 let mut temp_rows = HashMap::new();
                 let mut temp_cols = HashMap::new();
-                for (key, val) in curr_Block.deep_row_check() {
+                for (key, val) in curr_block.deep_row_check() {
                     temp_rows.insert(key, val + 3*(block_row as i32));
                 }
-                for (key, val) in curr_Block.deep_col_check() {
+                for (key, val) in curr_block.deep_col_check() {
                     temp_cols.insert(key, val + 3*(block_col as i32));
                 }
                 
@@ -250,7 +290,7 @@ impl Board
             update_cols.remove(&(map[&block_col_string]*3+1));
             update_cols.remove(&(map[&block_col_string]*3+2));
             for col in update_cols {
-                if self.at(row as usize, col as usize).remove(poss) {
+                if self.at_mut(row as usize, col as usize).remove(poss) {
                     changed = true;
                     if DEBUG_PRINTOUT { println!("deep check did something on rows");}
                 }
@@ -266,7 +306,7 @@ impl Board
             update_rows.remove(&(map[&block_row_string]*3+1));
             update_rows.remove(&(map[&block_row_string]*3+2));
             for row in update_rows {
-                if self.at(row as usize, col as usize).remove(poss) {
+                if self.at_mut(row as usize, col as usize).remove(poss) {
                     changed = true;
                     if DEBUG_PRINTOUT { println!("deep check did something on cols");}
                 }
@@ -465,9 +505,13 @@ impl Block
     }
 
     //returns a mutable reference to the Square at row, col
-    fn at(&mut self, row:usize, col:usize) -> &mut Square
+    fn at_mut(&mut self, row:usize, col:usize) -> &mut Square
     {
         &mut self.squares[row][col]
+    }
+    fn at(&self, row:usize, col:usize) -> &Square
+    {
+        &self.squares[row][col]
     }
     //removes val from possibilities of each Square
     fn remove(&mut self, val:i32)
