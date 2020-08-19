@@ -6,7 +6,7 @@ use std::{
 };
 pub mod tests;
 
-const DEBUG_PRINTOUT: bool = true;
+const DEBUG_PRINTOUT: bool = false;
 
 pub struct Board
 {
@@ -118,7 +118,7 @@ impl Board
     fn check_square(&mut self, row:usize, col:usize) -> bool
     {
         let mut changed = false;
-        let mut board = Arc::new(Mutex::new(Board::copy_from(self)));
+        // let mut board = Arc::new(Mutex::new(Board::copy_from(self)));
         match self.at(row, col).get_possibilities()
         {
             Some(values) =>
@@ -184,32 +184,37 @@ impl Board
         /*
         goal: run all square checks in parallel
         */
-        let board = Arc::new(Mutex::new(Board::copy_from(self)));
-        let mut handles = vec![];
-        let changed = Arc::new(Mutex::new(false));
+        //let board = Arc::new(Mutex::new(Board::copy_from(self)));
+        //let mut handles = vec![];
+        //let changed = Arc::new(Mutex::new(false));
+        let mut changed = false;
         for row in 0..9{
             for col in 0..9{
-                let _changed = Arc::clone(&changed);
-                let _board = Arc::clone(&board);
-                let handle = thread::spawn(move || {
-                    if _board.lock().unwrap().check_square(row, col){
-                        let mut val = _changed.lock().unwrap();
-                        *val = true;
-                    }
-                });
-                handles.push(handle);
+                // let _changed = Arc::clone(&changed);
+                // let _board = Arc::clone(&board);
+                // let handle = thread::spawn(move || {
+                //     if _board.lock().unwrap().check_square(row, col){
+                //         let mut val = _changed.lock().unwrap();
+                //         *val = true;
+                //     }
+                // });
+                // handles.push(handle);
+                if self.check_square(row, col){
+                    changed = true;
+                }
             }
         }
 
-        for handle in handles {
-            handle.join().unwrap();
-        }
+        // for handle in handles {
+        //     handle.join().unwrap();
+        // }
 
-        let changed_ret = *changed.lock().unwrap();
-        if changed_ret {
-            *self = Board::copy_from(&mut *board.lock().unwrap());
-        }
-        changed_ret
+        // let changed_ret = *changed.lock().unwrap();
+        // if changed_ret {
+        //     *self = Board::copy_from(&mut *board.lock().unwrap());
+        // }
+        // changed_ret
+        changed
     }
     //performs a deep check:
     // - if a possibility can only be in one row/column of a Block,
